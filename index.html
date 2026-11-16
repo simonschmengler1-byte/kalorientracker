@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Kalorientracker</title>
+    <meta name="description" content="Kalorien, Makros, Wasser und Gewicht im Blick – alles offline auf deinem Gerät." />
+    <meta name="theme-color" content="#f4f6f4" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f1412" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Kalorien" />
+    <link rel="icon" href="./favicon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
+    <script>
+      // Gespeichertes Farbschema sofort anwenden (verhindert kurzes Aufblitzen)
+      try {
+        var t = localStorage.getItem('theme');
+        if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <main id="app"></main>
+    <nav class="bottom-nav" id="nav" aria-label="Hauptnavigation"></nav>
+    <noscript>Bitte JavaScript aktivieren, um die App zu nutzen.</noscript>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
