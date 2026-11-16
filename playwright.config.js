@@ -10,13 +10,14 @@ export default defineConfig({
   retries: 1, // Open Food Facts ist manchmal kurz überlastet
   reporter: [['list']],
   use: {
-    baseURL: 'http://localhost:4199/',
+    // BASE_URL=https://… testet stattdessen die Online-Version
+    baseURL: process.env.BASE_URL || 'http://localhost:4199/',
     locale: 'de-DE',
     timezoneId: 'Europe/Berlin',
     acceptDownloads: true,
     serviceWorkers: 'block'
   },
-  webServer: {
+  webServer: process.env.BASE_URL ? undefined : {
     command: 'npx vite build && npx vite preview --port 4199 --strictPort',
     url: 'http://localhost:4199/',
     reuseExistingServer: true,

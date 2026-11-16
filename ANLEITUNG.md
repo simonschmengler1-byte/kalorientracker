@@ -1,6 +1,8 @@
 # Anleitung: Dein Kalorientracker
 
-**Link zur App:** APP_URL
+**Link zur App:** https://simonschmengler1-byte.github.io/kalorientracker/
+
+**Projekt auf GitHub:** https://github.com/simonschmengler1-byte/kalorientracker
 
 Die App läuft im Browser, lässt sich aber wie eine richtige App auf den Startbildschirm legen. Danach öffnet sie sich ohne Adressleiste und funktioniert auch ohne Internet. Nur das Abfragen von Barcodes und die Online-Suche brauchen eine Verbindung.
 
