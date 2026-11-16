@@ -177,7 +177,9 @@ function browserView(ctx) {
       input.addEventListener('input', () => {
         clearTimeout(searchTimer);
         if (!input.value.trim()) return runSearch();
-        searchTimer = setTimeout(runSearch, 600);
+        // Erst nach einer Tipp-Pause suchen (Open Food Facts erlaubt nur wenige Suchen pro Minute)
+        if (input.value.trim().length < 3) return;
+        searchTimer = setTimeout(runSearch, 1200);
       });
       $('form', body).onsubmit = (e) => {
         e.preventDefault();

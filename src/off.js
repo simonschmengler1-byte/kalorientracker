@@ -9,25 +9,41 @@ export class OffError extends Error {
   }
 }
 
-async function getJson(url, timeoutMs = 15000) {
-  if (!navigator.onLine) {
-    throw new OffError('offline', 'Keine Internetverbindung. Bitte prüfe WLAN oder mobile Daten und versuche es erneut.');
-  }
+const OFFLINE_MSG = 'Keine Internetverbindung. Bitte prüfe WLAN oder mobile Daten und versuche es erneut.';
+const BUSY_MSG = 'Open Food Facts antwortet gerade nicht (der kostenlose Dienst ist manchmal überlastet). Bitte in ein paar Sekunden erneut versuchen.';
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+async function getJsonOnce(url, timeoutMs) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
     const res = await fetch(url, { signal: ctrl.signal });
     if (res.status === 404) return { status: 0 };
-    if (!res.ok) throw new OffError('server', `Open Food Facts ist gerade nicht erreichbar (Fehler ${res.status}). Bitte später erneut versuchen.`);
+    if (!res.ok) throw new OffError('server', BUSY_MSG);
     return await res.json();
   } catch (err) {
     if (err instanceof OffError) throw err;
     if (err.name === 'AbortError') {
       throw new OffError('timeout', 'Die Abfrage dauert zu lange. Vielleicht ist die Verbindung schwach – bitte erneut versuchen.');
     }
-    throw new OffError('offline', 'Open Food Facts konnte nicht erreicht werden. Bitte prüfe deine Internetverbindung.');
+    // Netzwerkfehler: entweder offline oder der Server hat ohne CORS-Kopfzeilen geantwortet (z. B. Fehler 503)
+    throw new OffError(navigator.onLine ? 'server' : 'offline', navigator.onLine ? BUSY_MSG : OFFLINE_MSG);
   } finally {
     clearTimeout(timer);
+  }
+}
+
+/** Abfrage mit automatischer Wiederholung, falls Open Food Facts kurz überlastet ist */
+async function getJson(url, timeoutMs = 15000, attempts = 2) {
+  if (!navigator.onLine) throw new OffError('offline', OFFLINE_MSG);
+  for (let i = 1; ; i++) {
+    try {
+      return await getJsonOnce(url, timeoutMs);
+    } catch (err) {
+      if (err.kind !== 'server' || i >= attempts) throw err;
+      await sleep(1500 * i);
+    }
   }
 }
 
@@ -68,8 +84,18 @@ export async function fetchByBarcode(code) {
   return normalizeProduct(data.product, code);
 }
 
-/** Suche nach Name – deutsche Produkte bevorzugt */
+const searchCache = new Map();
+
+/** Suche nach Name – deutsche Produkte bevorzugt (Ergebnisse werden kurz zwischengespeichert) */
 export async function searchProducts(query) {
+  const key = query.toLowerCase();
+  if (searchCache.has(key)) return searchCache.get(key);
+  const result = await searchUncached(query);
+  searchCache.set(key, result);
+  return result;
+}
+
+async function searchUncached(query) {
   const params = new URLSearchParams({
     search_terms: query,
     search_simple: '1',

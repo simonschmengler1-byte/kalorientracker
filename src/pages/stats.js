@@ -52,9 +52,9 @@ export async function renderStats(container) {
       <section class="card">
         <div class="card-title"><span>Durchschnitt Makros</span></div>
         <div class="nutri-grid" style="grid-template-columns:repeat(3,1fr)">
-          <div><b class="tabular" style="color:var(--protein)">${num(avg('protein'))} g</b><span>Eiweiß (Ziel ${num(goals.protein)})</span></div>
-          <div><b class="tabular" style="color:var(--carbs)">${num(avg('carbs'))} g</b><span>Kohlenh. (Ziel ${num(goals.carbs)})</span></div>
-          <div><b class="tabular" style="color:var(--fat)">${num(avg('fat'))} g</b><span>Fett (Ziel ${num(goals.fat)})</span></div>
+          <div><b class="tabular" style="color:var(--protein)">${num(avg('protein'))} g</b><span>Eiweiß<br>Ziel ${num(goals.protein)} g</span></div>
+          <div><b class="tabular" style="color:var(--carbs)">${num(avg('carbs'))} g</b><span>Kohlenh.<br>Ziel ${num(goals.carbs)} g</span></div>
+          <div><b class="tabular" style="color:var(--fat)">${num(avg('fat'))} g</b><span>Fett<br>Ziel ${num(goals.fat)} g</span></div>
         </div>
       </section>` : `<section class="card">${emptyState(icons.stats, 'Noch keine Daten in dieser Woche', 'Sobald du Mahlzeiten im Tagebuch einträgst, siehst du hier deine Woche auf einen Blick.')}</section>`}`;
 

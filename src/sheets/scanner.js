@@ -14,8 +14,15 @@ const FORMATS = [
   Html5QrcodeSupportedFormats.UPC_E
 ];
 
+// Die Scanner-Bibliothek meldet beim schnellen Schließen der Kamera einen harmlosen Fehler
+// ("play() request was interrupted"). Diesen fangen wir ab, damit er nicht als Absturz erscheint.
+window.addEventListener('unhandledrejection', (e) => {
+  if (e.reason?.name === 'AbortError' && /play\(\)/.test(e.reason?.message || '')) e.preventDefault();
+});
+
 export function scannerView(ctx, { detailView, customFoodView }) {
   let scanner = null;
+  let starting = null; // läuft der Kamerastart noch?
   let stopped = false;
 
   async function stopCamera() {
@@ -23,6 +30,8 @@ export function scannerView(ctx, { detailView, customFoodView }) {
     const s = scanner;
     scanner = null;
     if (!s) return;
+    // Erst den Start abwarten, sonst bleibt die Kamera evtl. an
+    if (starting) await starting.catch(() => {});
     try {
       if (s.isScanning) await s.stop();
       s.clear();
@@ -69,11 +78,11 @@ export function scannerView(ctx, { detailView, customFoodView }) {
             useBarCodeDetectorIfSupported: true,
             verbose: false
           });
-          await scanner.start(
+          starting = scanner.start(
             { facingMode: 'environment' },
             {
               fps: 10,
-              qrbox: (w, h) => ({ width: Math.floor(w * 0.8), height: Math.max(80, Math.floor(h * 0.4)) }),
+              qrbox: (w, h) => ({ width: Math.max(50, Math.floor(w * 0.8)), height: Math.max(50, Math.floor(h * 0.4)) }),
               aspectRatio: 4 / 3
             },
             (text) => {
@@ -85,7 +94,9 @@ export function scannerView(ctx, { detailView, customFoodView }) {
             },
             () => { /* kein Code im Bild – weiter suchen */ }
           );
-          if (stopped) return stopCamera();
+          await starting;
+          starting = null;
+          if (stopped) return;
           msg.hidden = true;
         } catch (err) {
           const name = err?.name || String(err);

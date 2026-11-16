@@ -27,7 +27,7 @@ export async function renderWeight(container) {
       <div class="stat-row">
         <div class="stat"><b class="tabular">${num(first.kg, 1)}</b><span>Start kg</span></div>
         <div class="stat"><b class="tabular">${num(last.kg, 1)}</b><span>Aktuell kg</span></div>
-        <div class="stat"><b class="tabular ${diff < 0 ? 'down' : diff > 0 ? 'up' : ''}">${diff > 0 ? '+' : diff < 0 ? '−' : '±'}${num(Math.abs(diff), 1)}</b><span>Veränderung kg</span></div>
+        <div class="stat"><b class="tabular ${diff < 0 ? 'down' : diff > 0 ? 'up' : ''}">${diff > 0 ? '+' : diff < 0 ? '−' : '±'}${num(Math.abs(diff), 1)}</b><span>Änderung kg</span></div>
       </div>
       <section class="card">
         <div class="card-title"><span>Verlauf</span>${target ? `<span class="card-sub">Ziel: ${num(target, 1)} kg</span>` : ''}</div>
@@ -38,7 +38,7 @@ export async function renderWeight(container) {
     <form class="card" data-target novalidate>
       <div class="card-title"><span>Zielgewicht (optional)</span></div>
       <div class="input-group">
-        <div class="input-suffix"><input class="input" name="target" inputmode="decimal" placeholder="z. B. 68" value="${inputNum(target, 1)}"><em>kg</em></div>
+        <div class="input-suffix"><input class="input" name="targetKg" inputmode="decimal" placeholder="z. B. 68" value="${inputNum(target, 1)}"><em>kg</em></div>
         <button class="btn btn-outline" type="submit" style="flex:none">Speichern</button>
       </div>
       <p class="small muted" style="margin-top:8px">Wird im Diagramm als gestrichelte Linie angezeigt. Feld leeren und speichern, um es zu entfernen.</p>
@@ -73,17 +73,17 @@ export async function renderWeight(container) {
       const profile = await getSetting('profile');
       if (profile) await setSetting('profile', { ...profile, weight: kg });
     }
+    await renderWeight(container);
     toast(existing ? 'Gewicht aktualisiert' : 'Gewicht gespeichert', { duration: 2500 });
-    renderWeight(container);
   };
 
   const targetForm = $('[data-target]', container);
   targetForm.onsubmit = async (e) => {
     e.preventDefault();
-    const v = parseNum(targetForm.target.value);
+    const v = parseNum(targetForm.targetKg.value);
     await setSetting('targetWeight', v && v > 20 ? v : null);
+    await renderWeight(container);
     toast(v ? 'Zielgewicht gespeichert' : 'Zielgewicht entfernt', { duration: 2000 });
-    renderWeight(container);
   };
 
   $$('[data-del]', container).forEach((btn) => {
@@ -115,14 +115,16 @@ function chartSvg(list, target) {
   if (target) values.push(target);
   let min = Math.min(...values);
   let max = Math.max(...values);
-  const margin = Math.max((max - min) * 0.15, 0.5);
-  min = Math.floor(min - margin);
-  max = Math.ceil(max + margin);
+  // "Schöne" Achsenschritte (0,5 / 1 / 2 / 5 / 10 kg)
+  const raw = Math.max((max - min) * 1.3, 2) / 4;
+  const stepKg = [0.5, 1, 2, 5, 10, 20].find((s) => s >= raw) ?? 20;
+  min = Math.floor((min - stepKg * 0.3) / stepKg) * stepKg;
+  max = Math.ceil((max + stepKg * 0.3) / stepKg) * stepKg;
   const x = (d) => pad.l + ((parseIso(d).getTime() - t0) / span) * (W - pad.l - pad.r);
   const y = (kg) => pad.t + (1 - (kg - min) / (max - min)) * (H - pad.t - pad.b);
 
   // Hilfslinien
-  const steps = 4;
+  const steps = Math.round((max - min) / stepKg);
   const grid = Array.from({ length: steps + 1 }, (_, i) => {
     const v = min + ((max - min) * i) / steps;
     return `<line class="grid" x1="${pad.l}" x2="${W - pad.r}" y1="${y(v)}" y2="${y(v)}"/><text x="${pad.l - 6}" y="${y(v) + 4}" text-anchor="end">${num(v, 1)}</text>`;
